@@ -1,5 +1,5 @@
 // Calculation of sin and cos value
-module cordic(clk, angle, out_x, out_y);
+module cordic(clk, angle, out_x, out_y, in_valid, out_valid);
 
 parameter WIDTH = 16;
 parameter ANGLE_WIDTH = 32;
@@ -8,6 +8,8 @@ parameter ANGLE_WIDTH = 32;
 input signed [ANGLE_WIDTH-1 : 0] angle;
 
 input clk;
+input in_valid;
+output reg out_valid;
 output signed [WIDTH : 0] out_x; // xxx.xx_xxxx_xxxx_xxxx
 output signed [WIDTH : 0] out_y; // xxx.xx_xxxx_xxxx_xxxx
 
@@ -37,6 +39,7 @@ reg signed [WIDTH : 0] cal_y [ 0 : WIDTH];
 reg signed [ANGLE_WIDTH-1 : 0] cal_z [ 0 : WIDTH];
 
 reg signed [ANGLE_WIDTH-1 : 0] correct_angle;
+reg [WIDTH: 0] delay_valid;
 
 
 // initial stage setup //
@@ -68,7 +71,26 @@ begin
     endcase
 end
 
+always @(posedge clk) begin
+
+    delay_valid[0] <= in_valid;
+end
+
+
 // pipeline stage //
+
+genvar j;
+generate
+for (j=0; j<WIDTH; j=j+1)
+begin
+    
+    always @(posedge clk) 
+    begin
+        delay_valid[j+1] <= delay_valid[j];
+    end
+end
+
+endgenerate
 
 // genvar i;
 // generate
@@ -336,4 +358,7 @@ end
 assign out_x = cal_x[16];
 assign out_y = cal_y[16];
 
+always @(*) begin
+    out_valid = delay_valid[WIDTH];
+    end
 endmodule
